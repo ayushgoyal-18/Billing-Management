@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Environment Variables
+.env
+
+# Logs
+*.log
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# npm cache
+.npm/
+
+# Temporary files
+*.tmp
+*.temp

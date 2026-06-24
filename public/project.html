@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="project.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <title>Billing Management Dashboard</title>
+</head>
+
+<body>
+    <header class="header">
+        Billing Management Dashboard
+    </header>
+
+    <div class="stats-container">
+        <div class="stat-card">
+            <h3>Total Customers</h3>
+            <p id="customerCount">0</p>
+        </div>
+
+        <div class="stat-card">
+            <h3>Total Products</h3>
+            <p id="productCount">0</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h1>Customer Details</h1>
+        <div class="form-row">
+            <input type="text" id="name" placeholder="Customer Name">
+
+            <input type="text" id="mobile" placeholder="Mobile Number">
+
+            <input type="email" id="email" placeholder="Email Address">
+            <button onclick="addCustomer()">
+                Add Customer
+            </button>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Customer Name</th>
+                        <th>Mobile Number</th>
+                        <th>Email</th>
+                        <th>Edit</th>
+                        <th>Delete</th>
+                    </tr>
+                </thead>
+                <tbody id="customerTableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h1>Product Details</h1>
+
+        <div class="form-row">
+            <label for="customerSelect">
+                Select Customer :
+            </label>
+            <select id="customerSelect">
+                <option value="">
+                    -- Select Customer --
+                </option>
+            </select>
+            <button onclick="addRow()">
+                Add Product
+            </button>
+            <button class="invoice-btn" onclick="downloadInvoice()">
+                Download Invoice
+            </button>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Customer Name</th>
+                        <th>Product Name</th>
+                        <th>Quantity</th>
+                        <th>Rate</th>
+                        <th>Price</th>
+                        <th>Edit</th>
+                        <th>Delete</th>
+                    </tr>
+                </thead>
+
+                <tbody id="tableBody">
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="4">
+                            <b>Total Price</b>
+                        </td>
+                        <td id="totalPrice">
+                            0
+                        </td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    <script>
+        let customers = [];
+        const customerSelect =
+            document.getElementById("customerSelect");
+
+        const tableBody =
+            document.getElementById("tableBody");
+
+        const totalPrice =
+            document.getElementById("totalPrice");
+
+        let currentCustomerId = "";
+
+
+        customerSelect.addEventListener(
+            "change",
+
+            async function () {
+
+                currentCustomerId =
+                    this.value;
+
+                tableBody.innerHTML = "";
+
+                totalPrice.textContent = 0;
+
+                if (
+                    currentCustomerId
+                ) {
+
+                    await loadCustomerData(
+                        currentCustomerId
+                    );
+                }
+            }
+        );
+
+        function addRow() {
+
+            const selectedCustomerId =
+                customerSelect.value;
+            const customer =
+                customers.find(
+                    c => c._id == selectedCustomerId
+                );
+            if (!customer) {
+
+                alert("Please Select Customer");
+
+                return;
+            }
+
+            const row = document.createElement("tr");
+
+            row.innerHTML = `
+        
+            <td>${customer.name}</td>
+
+            <td>
+                <input type="text"
+                       placeholder="Product Name"
+                       class="product">
+            </td>
+
+            <td>
+                <input type="number"
+                       placeholder="Quantity"
+                       class="quantity">
+            </td>
+
+            <td>
+                <input type="number"
+                       placeholder="Rate"
+                       class="rate">
+            </td>
+
+            <td class="price">0</td>
+            <td>
+                <button class="save-btn" onclick="saveProduct(this)">
+                    Save
+                </button>
+            </td>
+            <td>
+                <button class="delete-btn" onclick="this.parentElement.parentElement.remove(); calculateTotal();">
+                    Delete
+                </button>
+            </td>
+        `;
+
+            tableBody.appendChild(row);
+
+            const quantityInput =
+                row.querySelector(".quantity");
+
+            const rateInput =
+                row.querySelector(".rate");
+
+            quantityInput.addEventListener(
+                "input",
+                calculateTotal
+            );
+
+            rateInput.addEventListener(
+                "input",
+                calculateTotal
+            );
+        }
+
+        function calculateTotal() {
+
+            let total = 0;
+
+            const rows =
+                document.querySelectorAll(
+                    "#tableBody tr"
+                );
+
+            rows.forEach(row => {
+
+                const quantityInput =
+                    row.querySelector(".quantity");
+
+                const rateInput =
+                    row.querySelector(".rate");
+
+                if (
+                    quantityInput &&
+                    rateInput
+                ) {
+
+                    const quantity =
+                        Number(
+                            quantityInput.value
+                        ) || 0;
+
+                    const rate =
+                        Number(
+                            rateInput.value
+                        ) || 0;
+
+                    const price =
+                        quantity * rate;
+
+                    row.querySelector(".price")
+                        .textContent = price;
+
+                    total += price;
+                }
+            });
+
+            totalPrice.textContent = total;
+        }
+
+        async function loadCustomers() {
+            try {
+                const customerTableBody =
+                    document.getElementById(
+                        "customerTableBody"
+                    );
+                customerTableBody.innerHTML =
+                    `
+                    <tr>
+                    <td colspan="6" class="loading">
+                        Loading...
+                    </td>
+                    </tr>
+                `;
+                const response =
+                    await fetch(
+                        "http://localhost:3000/customers"
+                    );
+                if (!response.ok) {
+                    throw new Error("Request Failed");
+                }
+                customers =
+                    await response.json();
+
+                if (customers.length === 0) {
+                    customerTableBody.innerHTML =
+                        `
+                    <tr>
+                        <td colspan="6" class="empty-state">
+                            No Customers Found
+                        </td>
+                    </tr>
+                    `;
+                    return;
+                }
+
+                const dashboardResponse =
+                    await fetch(
+                        "http://localhost:3000/dashboard"
+                    );
+
+                if (!dashboardResponse.ok) {
+
+                    throw new Error(
+                        "Dashboard Route Failed"
+                    );
+                }
+
+                const dashboardData =
+                    await dashboardResponse.json();
+
+                document.getElementById(
+                    "customerCount"
+                ).textContent =
+                    dashboardData.customerCount;
+
+                document.getElementById(
+                    "productCount"
+                ).textContent =
+                    dashboardData.productCount;
+
+                customerTableBody.innerHTML = "";
+
+                const selectedCustomer = customerSelect.value;
+
+                customerSelect.innerHTML =
+                    `<option value="">
+                        -- Select Customer --
+                    </option>`;
+
+                customers.forEach((customer, index) => {
+
+                    const row =
+                        document.createElement("tr");
+
+                    row.dataset.customerId =
+                        customer._id;
+
+                    row.innerHTML = `
+
+            <td>${index + 1}</td>
+
+            <td>${customer.name}</td>
+
+            <td>${customer.mobile}</td>
+
+            <td>${customer.email}</td>
+            <td>
+                <button onclick="editCustomer(this)">
+                    Edit
+                </button>
+            </td>
+
+            <td>
+                <button class="delete-btn" onclick="deleteCustomer(this)">
+                    Delete
+                </button>
+            </td>
+            `;
+                    customerTableBody
+                        .appendChild(row);
+
+                    const option =
+                        document.createElement(
+                            "option"
+                        );
+
+                    option.value =
+                        customer._id;
+
+                    option.textContent =
+                        customer.name;
+
+                    customerSelect
+                        .appendChild(option);
+                });
+                customerSelect.value = selectedCustomer;
+            }
+            catch (error) {
+
+                alert("Unable to load customers");
+
+                console.log(error);
+            }
+        }
+
+        async function addCustomer() {
+
+            try {
+
+                const name =
+                    document.getElementById("name").value;
+
+                const mobile =
+                    document.getElementById("mobile").value;
+
+                if (
+                    mobile.length !== 10 ||
+                    isNaN(mobile)
+                ) {
+                    alert("Mobile number must be 10 digits");
+                    return;
+                }
+
+                const email =
+                    document.getElementById("email").value;
+                const emailRegex =
+                    /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+                if (!emailRegex.test(email)) {
+                    alert("Enter valid email");
+                    return;
+                }
+                if (
+                    name.trim() === "" ||
+                    mobile.trim() === "" ||
+                    email.trim() === ""
+                ) {
+                    alert("Fill all fields");
+                    return;
+                }
+
+                const response =
+                    await fetch(
+                        "http://localhost:3000/customers",
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body: JSON.stringify({
+                                name,
+                                mobile,
+                                email
+                            })
+                        }
+                    );
+                if (!response.ok) {
+                    throw new Error("Request Failed");
+                }
+                const data =
+                    await response.json();
+
+                console.log(data);
+
+                await loadCustomers();
+
+                document.getElementById("name").value = "";
+                document.getElementById("mobile").value = "";
+                document.getElementById("email").value = "";
+
+            }
+            catch (error) {
+
+                alert("Unable to add customer");
+
+                console.log(error);
+            }
+        }
+
+        async function deleteCustomer(button) {
+
+            try {
+
+                if (
+                    !confirm(
+                        "Delete this customer?"
+                    )
+                ) {
+                    return;
+                }
+
+                const row =
+                    button.parentElement.parentElement;
+
+                const customerId =
+                    row.dataset.customerId;
+
+                if (
+                    customerSelect.value ==
+                    customerId
+                ) {
+
+                    customerSelect.value = "";
+
+                    tableBody.innerHTML = "";
+
+                    totalPrice.textContent = 0;
+
+                    currentCustomerId = "";
+                }
+
+                const response =
+                    await fetch(
+                        `http://localhost:3000/customers/${customerId}`,
+                        {
+                            method: "DELETE"
+                        });
+
+                if (!response.ok) {
+                    throw new Error(
+                        "Delete Failed"
+                    );
+                }
+                await loadCustomers();
+
+            }
+            catch (error) {
+
+                alert("Unable to delete customer");
+
+                console.log(error);
+            }
+        }
+        async function editCustomer(button) {
+
+            const row =
+                button.parentElement.parentElement;
+
+            const customerId =
+                row.dataset.customerId;
+
+            const newName =
+                prompt(
+                    "Enter New Name",
+                    row.cells[1].textContent
+                );
+
+            const newMobile =
+                prompt(
+                    "Enter New Mobile",
+                    row.cells[2].textContent
+                );
+
+            const newEmail =
+                prompt(
+                    "Enter New Email",
+                    row.cells[3].textContent
+                );
+
+            if (
+                !newName ||
+                !newMobile ||
+                !newEmail
+            ) {
+                return;
+            }
+
+            try {
+                console.log("Customer ID:", customerId);
+                console.log("Name:", newName);
+                console.log("Mobile:", newMobile);
+                console.log("Email:", newEmail);
+                if (
+                    newMobile.length !== 10 ||
+                    isNaN(newMobile)
+                ) {
+                    alert(
+                        "Invalid Mobile Number"
+                    );
+                    return;
+                }
+                const emailRegex =
+                    /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+                if (
+                    !emailRegex.test(newEmail)
+                ) {
+                    alert(
+                        "Enter Valid Email"
+                    );
+                    return;
+                }
+                const response =
+                    await fetch(
+                        `http://localhost:3000/customers/${customerId}`,
+                        {
+                            method: "PUT",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body: JSON.stringify({
+
+                                name: newName,
+
+                                mobile: newMobile,
+
+                                email: newEmail
+                            })
+                        }
+                    );
+
+                if (!response.ok) {
+                    throw new Error();
+                }
+
+                await loadCustomers();
+
+            }
+            catch (error) {
+
+                console.log(error);
+
+                alert(
+                    "Unable to update customer"
+                );
+            }
+        }
+
+        async function loadCustomerData(customerId) {
+
+            try {
+
+                tableBody.innerHTML = "";
+                totalPrice.textContent = 0;
+                const response =
+                    await fetch(
+                        `http://localhost:3000/products/${customerId}`
+                    );
+                if (!response.ok) {
+                    throw new Error("Request Failed");
+                }
+                const products =
+                    await response.json();
+                if (products.length === 0) {
+
+                    tableBody.innerHTML = `
+                    <tr>
+                    <td colspan="7" class="empty-state">
+                        No Products Found
+                    </td>
+                    </tr>
+                `;
+
+                    totalPrice.textContent = 0;
+
+                    return;
+                }
+                products.forEach(product => {
+
+                    const price =
+                        product.quantity *
+                        product.rate;
+
+                    const row =
+                        document.createElement("tr");
+
+                    row.innerHTML = `
+            <td>
+                ${customers.find(
+                        c => c._id == customerId
+                    )?.name || ""
+                        }
+            </td>
+
+            <td>${product.product}</td>
+
+            <td>${product.quantity}</td>
+
+            <td>₹${product.rate}</td>
+
+            <td>₹${price}</td>
+
+            <td>
+                <button onclick="editProduct(
+                    '${product._id}',
+                    '${product.product}',
+                    '${product.quantity}',
+                    '${product.rate}'
+                )">
+                    Edit
+                </button>
+            </td>
+
+            <td>
+                <button
+                class="delete-btn"
+                onclick="deleteProduct('${product._id}')">
+                    Delete
+                </button>
+            </td>
+        `;
+
+                    tableBody.appendChild(row);
+                });
+
+                let total = 0;
+
+                products.forEach(product => {
+                    total +=
+                        product.quantity *
+                        product.rate;
+                });
+
+                totalPrice.textContent = total;
+
+            }
+            catch (error) {
+
+                alert("Unable to load products");
+
+                console.log(error);
+            }
+        }
+
+        async function deleteProduct(productId) {
+
+            try {
+
+                if (!confirm("Delete this product?")) {
+                    return;
+                }
+                const response =
+                    await fetch(
+                        `http://localhost:3000/products/${productId}`,
+                        {
+                            method: "DELETE"
+                        }
+                    );
+
+                if (!response.ok) {
+                    throw new Error("Delete Failed");
+                }
+
+                await loadCustomerData(
+                    currentCustomerId
+                );
+                await loadCustomers();
+            }
+            catch (error) {
+
+                alert("Unable to delete product");
+
+                console.log(error);
+            }
+        }
+
+        async function editProduct(
+            productId,
+            oldProduct,
+            oldQuantity,
+            oldRate
+        ) {
+
+            const productName =
+                prompt(
+                    "Enter Product Name",
+                    oldProduct
+                );
+
+            const quantity =
+                prompt(
+                    "Enter Quantity",
+                    oldQuantity
+                );
+
+            const rate =
+                prompt(
+                    "Enter Rate",
+                    oldRate
+                );
+
+            if (
+                !productName ||
+                !quantity ||
+                !rate
+            ) {
+                return;
+            }
+
+            try {
+                if (
+                    Number(quantity) <= 0 ||
+                    Number(rate) <= 0
+                ) {
+                    alert(
+                        "Quantity and Rate must be greater than 0"
+                    );
+                    return;
+                }
+                const response =
+                    await fetch(
+                        `http://localhost:3000/products/${productId}`,
+                        {
+                            method: "PUT",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body: JSON.stringify({
+
+                                product: productName,
+
+                                quantity:
+                                    Number(quantity),
+
+                                rate:
+                                    Number(rate)
+                            })
+                        }
+                    );
+
+                if (!response.ok) {
+                    throw new Error();
+                }
+
+                await loadCustomerData(
+                    currentCustomerId
+                );
+
+                await loadCustomers();
+            }
+            catch (error) {
+
+                console.log(error);
+
+                alert(
+                    "Unable to update product"
+                );
+            }
+        }
+
+        async function saveProduct(button) {
+
+            try {
+
+
+                const row =
+                    button.parentElement.parentElement;
+
+                const product =
+                    row.querySelector(".product").value;
+
+                const quantity =
+                    Number(
+                        row.querySelector(".quantity").value
+                    );
+
+                const rate =
+                    Number(
+                        row.querySelector(".rate").value
+                    );
+                if (
+                    product.trim() === "" ||
+                    quantity <= 0 ||
+                    rate <= 0
+                ) {
+                    alert("Enter valid product details");
+                    return;
+                }
+
+                const response =
+                    await fetch(
+                        "http://localhost:3000/products",
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body: JSON.stringify({
+
+                                customerId:
+                                    currentCustomerId,
+
+                                product,
+                                quantity,
+                                rate
+                            })
+                        }
+                    );
+
+                if (!response.ok) {
+                    throw new Error(
+                        "Save Failed"
+                    );
+                }
+                button.disabled = true;
+                button.textContent = "✓ Saved";
+                button.classList.remove(
+                    "save-btn"
+                );
+                row.querySelector(".product").disabled = true;
+                row.querySelector(".quantity").disabled = true;
+                row.querySelector(".rate").disabled = true;
+                await loadCustomerData(currentCustomerId);
+                await loadCustomers();
+            }
+            catch (error) {
+
+                alert("Unable to save product");
+
+                console.log(error);
+            }
+        }
+
+        async function downloadInvoice() {
+
+            if (!currentCustomerId) {
+
+                alert("Please Select Customer");
+                return;
+            }
+
+            try {
+
+                const response =
+                    await fetch(
+                        `http://localhost:3000/products/${currentCustomerId}`
+                    );
+
+                const products =
+                    await response.json();
+
+                if (products.length === 0) {
+
+                    alert("No Products Found");
+                    return;
+                }
+
+                const customer =
+                    customers.find(
+                        c => c._id == currentCustomerId
+                    );
+
+                const { jsPDF } =
+                    window.jspdf;
+
+                const doc =
+                    new jsPDF();
+
+                let grandTotal = 0;
+
+                products.forEach(product => {
+
+                    grandTotal +=
+                        product.quantity *
+                        product.rate;
+                });
+
+                // =========================
+                // Header
+                // =========================
+
+                doc.setFillColor(
+                    37,
+                    99,
+                    235
+                );
+
+                doc.rect(
+                    0,
+                    0,
+                    210,
+                    35,
+                    "F"
+                );
+
+                doc.setTextColor(
+                    255,
+                    255,
+                    255
+                );
+
+                doc.setFontSize(22);
+
+                doc.text(
+                    "Billing Management System",
+                    48,
+                    20
+                );
+
+                doc.setFontSize(12);
+
+                doc.text(
+                    "Professional Invoice",
+                    78,
+                    28
+                );
+
+                // =========================
+                // Invoice Info
+                // =========================
+
+                doc.setTextColor(
+                    0,
+                    0,
+                    0
+                );
+
+                doc.setFontSize(12);
+
+                const today =
+                    new Date();
+
+                doc.text(
+                    `Invoice Date : ${today.toLocaleDateString()}`,
+                    140,
+                    50
+                );
+
+                // =========================
+                // Customer Box
+                // =========================
+
+                doc.setDrawColor(
+                    200,
+                    200,
+                    200
+                );
+
+                doc.roundedRect(
+                    14,
+                    45,
+                    182,
+                    35,
+                    3,
+                    3
+                );
+
+                doc.setFontSize(13);
+
+                doc.text(
+                    "Customer Details",
+                    20,
+                    55
+                );
+
+                doc.setFontSize(11);
+
+                doc.text(
+                    `Name : ${customer.name}`,
+                    20,
+                    65
+                );
+
+                doc.text(
+                    `Mobile : ${customer.mobile}`,
+                    20,
+                    73
+                );
+
+                doc.text(
+                    `Email : ${customer.email}`,
+                    105,
+                    65
+                );
+
+                // =========================
+                // Products Table
+                // =========================
+
+                const tableData =
+                    products.map(product => [
+
+                        product.product,
+
+                        product.quantity,
+
+                        `₹${product.rate}`,
+
+                        `₹${product.quantity * product.rate}`
+                    ]);
+
+                doc.autoTable({
+
+                    startY: 95,
+
+                    head: [[
+                        "Product",
+                        "Quantity",
+                        "Rate",
+                        "Total"
+                    ]],
+
+                    body: tableData,
+
+                    theme: "grid",
+
+                    headStyles: {
+
+                        fillColor: [37, 99, 235],
+
+                        textColor: [255, 255, 255],
+
+                        fontSize: 11
+                    },
+
+                    styles: {
+
+                        fontSize: 10,
+
+                        cellPadding: 4
+                    },
+
+                    alternateRowStyles: {
+
+                        fillColor: [245, 247, 250]
+                    }
+                });
+
+                // =========================
+                // Grand Total
+                // =========================
+
+                const finalY =
+                    doc.lastAutoTable.finalY + 15;
+
+                doc.setFillColor(
+                    240,
+                    249,
+                    255
+                );
+
+                doc.roundedRect(
+                    120,
+                    finalY,
+                    70,
+                    15,
+                    2,
+                    2,
+                    "F"
+                );
+
+                doc.setFontSize(13);
+
+                doc.text(
+                    `Grand Total : ₹${grandTotal}`,
+                    128,
+                    finalY + 10
+                );
+
+                // =========================
+                // Footer
+                // =========================
+
+                doc.setDrawColor(
+                    220,
+                    220,
+                    220
+                );
+
+                doc.line(
+                    20,
+                    finalY + 30,
+                    190,
+                    finalY + 30
+                );
+
+                doc.setFontSize(10);
+
+                doc.setTextColor(
+                    120,
+                    120,
+                    120
+                );
+
+                doc.text(
+                    "Thank You For Your Business",
+                    72,
+                    finalY + 40
+                );
+
+                const footerY =
+                    Math.min(
+                        finalY + 48,
+                        280
+                    );
+
+                doc.text(
+                    "Generated By Billing Management Dashboard",
+                    52,
+                    footerY
+                );
+
+                // =========================
+                // Save
+                // =========================
+
+                doc.save(
+                    `${customer.name}_Invoice.pdf`
+                );
+
+            }
+            catch (error) {
+
+                console.log(error);
+
+                alert(
+                    "Unable To Generate Invoice"
+                );
+            }
+        }
+        loadCustomers();
+    </script>
+
+</body>
+
+</html>
