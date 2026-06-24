@@ -278,7 +278,7 @@
                 `;
                 const response =
                     await fetch(
-                        "http://localhost:3000/customers"
+                        "https://billing-management-backend-ypsf.onrender.com/customers"
                     );
                 if (!response.ok) {
                     throw new Error("Request Failed");
@@ -300,7 +300,7 @@
 
                 const dashboardResponse =
                     await fetch(
-                        "http://localhost:3000/dashboard"
+                        "https://billing-management-backend-ypsf.onrender.com/dashboard"
                     );
 
                 if (!dashboardResponse.ok) {
@@ -378,7 +378,17 @@
                     customerSelect
                         .appendChild(option);
                 });
-                customerSelect.value = selectedCustomer;
+                if (
+                    customers.some(
+                        c => c._id === selectedCustomer
+                    )
+                ) {
+                    customerSelect.value = selectedCustomer;
+                }
+                else {
+                    customerSelect.value = "";
+                    currentCustomerId = "";
+                }
             }
             catch (error) {
 
@@ -426,7 +436,7 @@
 
                 const response =
                     await fetch(
-                        "http://localhost:3000/customers",
+                        "https://billing-management-backend-ypsf.onrender.com/customers",
                         {
                             method: "POST",
 
@@ -499,7 +509,7 @@
 
                 const response =
                     await fetch(
-                        `http://localhost:3000/customers/${customerId}`,
+                        `https://billing-management-backend-ypsf.onrender.com/customers/${customerId}`,
                         {
                             method: "DELETE"
                         });
@@ -580,7 +590,7 @@
                 }
                 const response =
                     await fetch(
-                        `http://localhost:3000/customers/${customerId}`,
+                        `https://billing-management-backend-ypsf.onrender.com/customers/${customerId}`,
                         {
                             method: "PUT",
 
@@ -625,7 +635,7 @@
                 totalPrice.textContent = 0;
                 const response =
                     await fetch(
-                        `http://localhost:3000/products/${customerId}`
+                        `https://billing-management-backend-ypsf.onrender.com/products/${customerId}`
                     );
                 if (!response.ok) {
                     throw new Error("Request Failed");
@@ -722,7 +732,7 @@
                 }
                 const response =
                     await fetch(
-                        `http://localhost:3000/products/${productId}`,
+                        `https://billing-management-backend-ypsf.onrender.com/products/${productId}`,
                         {
                             method: "DELETE"
                         }
@@ -790,7 +800,7 @@
                 }
                 const response =
                     await fetch(
-                        `http://localhost:3000/products/${productId}`,
+                        `https://billing-management-backend-ypsf.onrender.com/products/${productId}`,
                         {
                             method: "PUT",
 
@@ -863,7 +873,7 @@
 
                 const response =
                     await fetch(
-                        "http://localhost:3000/products",
+                        "https://billing-management-backend-ypsf.onrender.com/products",
                         {
                             method: "POST",
 
@@ -920,7 +930,7 @@
 
                 const response =
                     await fetch(
-                        `http://localhost:3000/products/${currentCustomerId}`
+                        `https://billing-management-backend-ypsf.onrender.com/products/${currentCustomerId}`
                     );
 
                 const products =
