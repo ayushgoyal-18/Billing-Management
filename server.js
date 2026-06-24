@@ -35,9 +35,9 @@ mongoose.connect(
     });
 
 const Customer =
-    require("./models/Customer");
+    require("./models/customer");
 const Product =
-    require("./models/Product");
+    require("./models/product");
 
 app.post("/customers", async (req, res) => {
 
