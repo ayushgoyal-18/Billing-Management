@@ -38,6 +38,8 @@ const Customer =
     require("./models/customer");
 const Product =
     require("./models/product");
+const Invoice =
+    require("./models/Invoice");
 
 app.post("/customers", async (req, res) => {
 
@@ -78,13 +80,34 @@ app.delete("/customers/:id",
 
         try {
 
+            const invoices =
+                await Invoice.find({
+
+                    customerId:
+                        req.params.id
+                });
+
+            const invoiceIds =
+                invoices.map(
+                    invoice => invoice._id
+                );
+
+            await Product.deleteMany({
+
+                invoiceId: {
+                    $in: invoiceIds
+                }
+            });
+
+            await Invoice.deleteMany({
+
+                customerId:
+                    req.params.id
+            });
+
             await Customer.findByIdAndDelete(
                 req.params.id
             );
-
-            await Product.deleteMany({
-                customerId: req.params.id
-            });
 
             res.json({
                 message: "Customer Deleted"
@@ -133,14 +156,14 @@ app.post("/products", async (req, res) => {
     try {
 
         const {
-            customerId,
+            invoiceId,
             product,
             quantity,
             rate
         } = req.body;
 
         if (
-            !customerId ||
+            !invoiceId ||
             !product ||
             quantity <= 0 ||
             rate <= 0
@@ -188,7 +211,8 @@ app.get("/dashboard", async (req, res) => {
         });
     }
 });
-app.get("/products/:customerId",
+app.get(
+    "/products/:invoiceId",
 
     async (req, res) => {
 
@@ -196,9 +220,8 @@ app.get("/products/:customerId",
 
             const products =
                 await Product.find({
-
-                    customerId:
-                        req.params.customerId
+                    invoiceId:
+                        req.params.invoiceId
                 });
 
             res.json(products);
@@ -209,7 +232,8 @@ app.get("/products/:customerId",
                 message: "Server Error"
             });
         }
-    });
+    }
+);
 app.delete(
     "/products/:id",
 
@@ -265,3 +289,96 @@ app.put(
         }
     }
 );
+app.post(
+    "/invoices",
+
+    async (req, res) => {
+
+        try {
+
+            const invoiceCount =
+                await Invoice.countDocuments();
+
+            const invoice =
+                new Invoice({
+
+                    customerId:
+                        req.body.customerId,
+
+                    invoiceNumber:
+                        `INV-${Date.now()}`
+                }); f
+
+            await invoice.save();
+
+            res.json(invoice);
+
+        }
+        catch (error) {
+
+            res.status(500).json({
+                message: "Server Error"
+            });
+        }
+    });
+app.get(
+    "/invoices/:customerId",
+
+    async (req, res) => {
+
+        try {
+
+            const invoices =
+                await Invoice.find({
+
+                    customerId:
+                        req.params.customerId
+                });
+
+            res.json(invoices);
+
+        }
+        catch (error) {
+
+            res.status(500).json({
+                message: "Server Error"
+            });
+        }
+    });
+app.get("/invoice-count", async (req, res) => {
+
+    try {
+
+        const invoiceCount =
+            await Invoice.countDocuments();
+
+        res.json({
+            invoiceCount
+        });
+
+    }
+    catch (error) {
+
+        res.status(500).json({
+            message: "Server Error"
+        });
+    }
+});
+app.get("/recent-invoices", async (req, res) => {
+
+    try {
+
+        const invoices =
+            await Invoice.find()
+                .sort({ createdAt: -1 });
+
+        res.json(invoices);
+
+    }
+    catch (error) {
+
+        res.status(500).json({
+            message: "Server Error"
+        });
+    }
+});

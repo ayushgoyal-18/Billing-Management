@@ -1,18 +1,32 @@
 const mongoose = require("mongoose");
 
-const productSchema = new mongoose.Schema({
+const productSchema =
+new mongoose.Schema({
 
-    customerId: String,
+    invoiceId:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"Invoice",
+        required:true
+    },
 
-    product: String,
+    product:{
+        type:String,
+        required:true
+    },
 
-    quantity: Number,
+    quantity:{
+        type:Number,
+        required:true
+    },
 
-    rate: Number
+    rate:{
+        type:Number,
+        required:true
+    }
 });
 
 module.exports =
-    mongoose.model(
-        "Product",
-        productSchema
-    );
+mongoose.model(
+    "Product",
+    productSchema
+);

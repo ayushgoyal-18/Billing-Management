@@ -25,6 +25,11 @@
             <h3>Total Products</h3>
             <p id="productCount">0</p>
         </div>
+
+        <div class="stat-card">
+            <h3>Total Invoices</h3>
+            <p id="invoiceCount">0</p>
+        </div>
     </div>
 
     <div class="card">
@@ -70,6 +75,15 @@
                     -- Select Customer --
                 </option>
             </select>
+            <button onclick="createInvoice()">
+                Create Invoice
+            </button>
+
+            <select id="invoiceSelect">
+                <option value="">
+                    -- Select Invoice --
+                </option>
+            </select>
             <button onclick="addRow()">
                 Add Product
             </button>
@@ -109,8 +123,35 @@
             </table>
         </div>
     </div>
+    <div class="card">
+
+        <h1>Recent Invoices</h1>
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Invoice Number</th>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Download</th>
+                    </tr>
+                </thead>
+
+                <tbody id="invoiceTableBody">
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
     <script>
         let customers = [];
+        let currentInvoiceId = "";
         const customerSelect =
             document.getElementById("customerSelect");
 
@@ -119,7 +160,10 @@
 
         const totalPrice =
             document.getElementById("totalPrice");
-
+        const invoiceSelect =
+            document.getElementById(
+                "invoiceSelect"
+            );
         let currentCustomerId = "";
 
 
@@ -139,13 +183,28 @@
                     currentCustomerId
                 ) {
 
-                    await loadCustomerData(
+                    await loadInvoices(
                         currentCustomerId
                     );
                 }
             }
         );
+        invoiceSelect.addEventListener(
+            "change",
 
+            function () {
+
+                currentInvoiceId =
+                    this.value;
+
+                if (currentInvoiceId) {
+
+                    loadInvoiceData(
+                        currentInvoiceId
+                    );
+                }
+            }
+        );
         function addRow() {
 
             const selectedCustomerId =
@@ -312,7 +371,18 @@
 
                 const dashboardData =
                     await dashboardResponse.json();
+                const invoiceResponse =
+                    await fetch(
+                        "https://billing-management-backend-ypsf.onrender.com/invoice-count"
+                    );
 
+                const invoiceData =
+                    await invoiceResponse.json();
+
+                document.getElementById(
+                    "invoiceCount"
+                ).textContent =
+                    invoiceData.invoiceCount;
                 document.getElementById(
                     "customerCount"
                 ).textContent =
@@ -627,7 +697,7 @@
             }
         }
 
-        async function loadCustomerData(customerId) {
+        async function loadInvoiceData(invoiceId) {
 
             try {
 
@@ -635,7 +705,7 @@
                 totalPrice.textContent = 0;
                 const response =
                     await fetch(
-                        `https://billing-management-backend-ypsf.onrender.com/products/${customerId}`
+                        `https://billing-management-backend-ypsf.onrender.com/products/${invoiceId}`
                     );
                 if (!response.ok) {
                     throw new Error("Request Failed");
@@ -668,9 +738,9 @@
                     row.innerHTML = `
             <td>
                 ${customers.find(
-                        c => c._id == customerId
-                    )?.name || ""
-                        }
+                        c => c._id ==
+                            currentCustomerId
+                    )?.name || ""}
             </td>
 
             <td>${product.product}</td>
@@ -741,9 +811,8 @@
                 if (!response.ok) {
                     throw new Error("Delete Failed");
                 }
-
-                await loadCustomerData(
-                    currentCustomerId
+                await loadInvoiceData(
+                    currentInvoiceId
                 );
                 await loadCustomers();
             }
@@ -826,8 +895,8 @@
                     throw new Error();
                 }
 
-                await loadCustomerData(
-                    currentCustomerId
+                await loadInvoiceData(
+                    currentInvoiceId
                 );
 
                 await loadCustomers();
@@ -870,7 +939,14 @@
                     alert("Enter valid product details");
                     return;
                 }
+                if (!currentInvoiceId) {
 
+                    alert(
+                        "Create or Select Invoice First"
+                    );
+
+                    return;
+                }
                 const response =
                     await fetch(
                         "https://billing-management-backend-ypsf.onrender.com/products",
@@ -884,9 +960,8 @@
 
                             body: JSON.stringify({
 
-                                customerId:
-                                    currentCustomerId,
-
+                                invoiceId:
+                                    currentInvoiceId,
                                 product,
                                 quantity,
                                 rate
@@ -907,7 +982,9 @@
                 row.querySelector(".product").disabled = true;
                 row.querySelector(".quantity").disabled = true;
                 row.querySelector(".rate").disabled = true;
-                await loadCustomerData(currentCustomerId);
+                await loadInvoiceData(
+                    currentInvoiceId
+                );
                 await loadCustomers();
             }
             catch (error) {
@@ -920,9 +997,9 @@
 
         async function downloadInvoice() {
 
-            if (!currentCustomerId) {
+            if (!currentInvoiceId) {
 
-                alert("Please Select Customer");
+                alert("Please Select Invoice");
                 return;
             }
 
@@ -930,7 +1007,7 @@
 
                 const response =
                     await fetch(
-                        `https://billing-management-backend-ypsf.onrender.com/products/${currentCustomerId}`
+                        `https://billing-management-backend-ypsf.onrender.com/products/${currentInvoiceId}`
                     );
 
                 const products =
@@ -946,7 +1023,19 @@
                     customers.find(
                         c => c._id == currentCustomerId
                     );
+                const invoiceResponse =
+                    await fetch(
+                        `https://billing-management-backend-ypsf.onrender.com/invoices/${currentCustomerId}`
+                    );
 
+                const invoices =
+                    await invoiceResponse.json();
+
+                const invoice =
+                    invoices.find(
+                        inv => inv._id ==
+                            currentInvoiceId
+                    );
                 const { jsPDF } =
                     window.jspdf;
 
@@ -989,16 +1078,16 @@
                 doc.setFontSize(22);
 
                 doc.text(
-                    "Billing Management System",
-                    48,
+                    "Billing Management Dashboard",
+                    45,
                     20
                 );
 
-                doc.setFontSize(12);
+                doc.setFontSize(10);
 
                 doc.text(
                     "Professional Invoice",
-                    78,
+                    80,
                     28
                 );
 
@@ -1006,21 +1095,34 @@
                 // Invoice Info
                 // =========================
 
+                doc.setFontSize(18);
+
                 doc.setTextColor(
                     0,
                     0,
                     0
                 );
 
-                doc.setFontSize(12);
+                doc.text(
+                    "INVOICE",
+                    15,
+                    50
+                );
 
-                const today =
-                    new Date();
+                doc.setFontSize(11);
 
                 doc.text(
-                    `Invoice Date : ${today.toLocaleDateString()}`,
-                    140,
-                    50
+                    `Invoice No : ${invoice.invoiceNumber}`,
+                    130,
+                    45
+                );
+
+                doc.text(
+                    `Date : ${new Date(
+                        invoice.createdAt
+                    ).toLocaleDateString()}`,
+                    130,
+                    55
                 );
 
                 // =========================
@@ -1028,26 +1130,26 @@
                 // =========================
 
                 doc.setDrawColor(
-                    200,
-                    200,
-                    200
+                    220,
+                    220,
+                    220
                 );
 
                 doc.roundedRect(
-                    14,
-                    45,
-                    182,
+                    15,
+                    65,
+                    180,
                     35,
                     3,
                     3
                 );
 
-                doc.setFontSize(13);
+                doc.setFontSize(12);
 
                 doc.text(
                     "Customer Details",
                     20,
-                    55
+                    75
                 );
 
                 doc.setFontSize(11);
@@ -1055,71 +1157,62 @@
                 doc.text(
                     `Name : ${customer.name}`,
                     20,
-                    65
+                    85
                 );
 
                 doc.text(
                     `Mobile : ${customer.mobile}`,
                     20,
-                    73
+                    95
                 );
 
                 doc.text(
                     `Email : ${customer.email}`,
-                    105,
-                    65
+                    100,
+                    95
                 );
 
                 // =========================
                 // Products Table
-                // =========================
+                // =========================f
 
-                const tableData =
-                    products.map(product => [
+                doc.autoTable({
+
+                    startY: 110,
+
+                    theme: "grid",
+
+                    head: [[
+
+                        "Product",
+
+                        "Quantity",
+
+                        "Rate",
+
+                        "Amount"
+                    ]],
+
+                    body: products.map(product => [
 
                         product.product,
 
                         product.quantity,
 
-                        `₹${product.rate}`,
+                        `Rs ${product.rate}`,
 
-                        `₹${product.quantity * product.rate}`
-                    ]);
-
-                doc.autoTable({
-
-                    startY: 95,
-
-                    head: [[
-                        "Product",
-                        "Quantity",
-                        "Rate",
-                        "Total"
-                    ]],
-
-                    body: tableData,
-
-                    theme: "grid",
+                        `Rs ${product.quantity *
+                        product.rate
+                        }`
+                    ]),
 
                     headStyles: {
 
-                        fillColor: [37, 99, 235],
-
-                        textColor: [255, 255, 255],
-
-                        fontSize: 11
-                    },
-
-                    styles: {
-
-                        fontSize: 10,
-
-                        cellPadding: 4
-                    },
-
-                    alternateRowStyles: {
-
-                        fillColor: [245, 247, 250]
+                        fillColor: [
+                            37,
+                            99,
+                            235
+                        ]
                     }
                 });
 
@@ -1128,7 +1221,7 @@
                 // =========================
 
                 const finalY =
-                    doc.lastAutoTable.finalY + 15;
+                    doc.lastAutoTable.finalY;
 
                 doc.setFillColor(
                     240,
@@ -1138,7 +1231,7 @@
 
                 doc.roundedRect(
                     120,
-                    finalY,
+                    finalY + 10,
                     70,
                     15,
                     2,
@@ -1149,9 +1242,9 @@
                 doc.setFontSize(13);
 
                 doc.text(
-                    `Grand Total : ₹${grandTotal}`,
-                    128,
-                    finalY + 10
+                    `Total : Rs ${grandTotal}`,
+                    130,
+                    finalY + 20
                 );
 
                 // =========================
@@ -1165,10 +1258,10 @@
                 );
 
                 doc.line(
-                    20,
-                    finalY + 30,
-                    190,
-                    finalY + 30
+                    15,
+                    270,
+                    195,
+                    270
                 );
 
                 doc.setFontSize(10);
@@ -1180,21 +1273,15 @@
                 );
 
                 doc.text(
-                    "Thank You For Your Business",
-                    72,
-                    finalY + 40
+                    "Thank you for your business.",
+                    70,
+                    278
                 );
 
-                const footerY =
-                    Math.min(
-                        finalY + 48,
-                        280
-                    );
-
                 doc.text(
-                    "Generated By Billing Management Dashboard",
-                    52,
-                    footerY
+                    "Generated by Billing Management Dashboard",
+                    55,
+                    284
                 );
 
                 // =========================
@@ -1215,7 +1302,142 @@
                 );
             }
         }
-        loadCustomers();
+        async function createInvoice() {
+
+            if (!currentCustomerId) {
+
+                alert(
+                    "Select Customer First"
+                );
+
+                return;
+            }
+
+            const response =
+                await fetch(
+                    "https://billing-management-backend-ypsf.onrender.com/invoices",
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body: JSON.stringify({
+
+                            customerId:
+                                currentCustomerId
+                        })
+                    }
+                );
+
+            const invoice =
+                await response.json();
+
+            alert(
+                `Invoice Created : ${invoice.invoiceNumber}`
+            );
+
+            await loadInvoices(
+                currentCustomerId
+            );
+        }
+        async function loadInvoices(customerId) {
+
+            const response =
+                await fetch(
+                    `https://billing-management-backend-ypsf.onrender.com/invoices/${customerId}`
+                );
+
+            const invoices =
+                await response.json();
+
+            invoiceSelect.innerHTML =
+                "<option value=''>Select Invoice</option>";
+
+            invoices.forEach(invoice => {
+
+                invoiceSelect.innerHTML += `
+            <option value="${invoice._id}">
+                ${invoice.invoiceNumber}
+            </option>
+        `;
+            });
+
+            if (invoices.length) {
+
+                invoiceSelect.value =
+                    invoices[invoices.length - 1]._id;
+
+                currentInvoiceId =
+                    invoiceSelect.value;
+
+                loadInvoiceData(
+                    currentInvoiceId
+                );
+            }
+        }
+        async function loadRecentInvoices() {
+
+            const response =
+                await fetch(
+                    "https://billing-management-backend-ypsf.onrender.com/recent-invoices"
+                );
+
+            const invoices =
+                await response.json();
+
+            const tbody =
+                document.getElementById(
+                    "invoiceTableBody"
+                );
+
+            tbody.innerHTML = "";
+
+            invoices.forEach(invoice => {
+
+                const customer =
+                    customers.find(
+                        c => String(c._id) === String(invoice.customerId)
+                    );
+
+                tbody.innerHTML += `
+
+        <tr>
+
+            <td>${invoice.invoiceNumber}</td>
+
+            <td>
+                ${customer?.name || "Unknown"}
+            </td>
+
+            <td>
+                ${new Date(
+                    invoice.createdAt
+                ).toLocaleDateString()}
+            </td>
+
+            <td>
+
+                <button
+                onclick="
+                invoiceSelect.value='${invoice._id}';
+                currentInvoiceId='${invoice._id}';
+                loadInvoiceData('${invoice._id}');
+                ">
+                View
+                </button>
+
+            </td>
+
+        </tr>
+        `;
+            });
+        }
+        loadCustomers().then(() => {
+            loadRecentInvoices();
+        });
     </script>
 
 </body>
