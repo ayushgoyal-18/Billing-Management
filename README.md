@@ -1,14 +1,18 @@
 # Billing Management System
 
-A full-stack billing management application built using HTML, CSS, JavaScript, Node.js, Express.js, and MongoDB Atlas.
+A full-stack Billing Management System built using HTML, CSS, JavaScript, Node.js, Express.js, and MongoDB Atlas. The application allows users to manage customers, create invoices, track products, generate PDF bills, and monitor billing activities through an interactive dashboard.
 
 ## Features
 
 * Customer Management (Add, Edit, Delete)
 * Product Management (Add, Edit, Delete)
-* Dynamic Billing Calculation
-* Dashboard Analytics
+* Invoice Creation and Management
+* Automatic Invoice Number Generation
+* Invoice History Tracking
+* Dynamic Grand Total Calculation
 * PDF Invoice Generation
+* Dashboard Analytics
+* Recent Invoices Dashboard
 * MongoDB Atlas Integration
 * Responsive User Interface
 
@@ -18,15 +22,18 @@ A full-stack billing management application built using HTML, CSS, JavaScript, N
 
 **Backend:** Node.js, Express.js
 
-**Database:** MongoDB Atlas
+**Database:** MongoDB Atlas, Mongoose
 
 ## Project Highlights
 
-* Implemented complete CRUD operations for customers and products.
-* Integrated MongoDB Atlas for persistent cloud-based storage.
-* Developed a professional invoice generation system using jsPDF.
-* Built RESTful APIs for data management and dashboard statistics.
+* Implemented complete CRUD operations for customers, products, and invoices.
+* Integrated MongoDB Atlas for persistent cloud-based data storage.
+* Developed a professional invoice management system with unique invoice numbering.
+* Built RESTful APIs for customer, product, invoice, and dashboard operations.
+* Implemented automatic grand total calculation and invoice tracking.
+* Generated professional PDF invoices using jsPDF.
 * Designed a responsive and user-friendly dashboard interface.
+* Deployed the backend on Render and connected it with MongoDB Atlas.
 
 ## Installation
 
