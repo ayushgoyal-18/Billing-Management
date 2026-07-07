@@ -135,7 +135,8 @@ app.put(
                     req.body,
 
                     {
-                        new: true
+                        new: true,
+                        runValidators: true
                     }
                 );
 
@@ -172,11 +173,34 @@ app.post("/products", async (req, res) => {
                 message: "Invalid Data"
             });
         }
-
         const newProduct =
             new Product(req.body);
-
         await newProduct.save();
+
+        const products =
+            await Product.find({
+                invoiceId
+            });
+
+        const grandTotal =
+            products.reduce(
+
+                (sum, product) =>
+
+                    sum +
+                    (product.quantity * product.rate),
+
+                0
+            );
+
+        await Invoice.findByIdAndUpdate(
+
+            invoiceId,
+
+            {
+                grandTotal
+            }
+        );
 
         res.json(newProduct);
 
@@ -241,18 +265,64 @@ app.delete(
 
         try {
 
+            const product =
+                await Product.findById(
+                    req.params.id
+                );
+
+            if (!product) {
+
+                return res.status(404)
+                    .json({
+                        message:
+                            "Product Not Found"
+                    });
+            }
+
+            const invoiceId =
+                product.invoiceId;
+
             await Product.findByIdAndDelete(
                 req.params.id
             );
 
+            const products =
+                await Product.find({
+                    invoiceId
+                });
+
+            const grandTotal =
+                products.reduce(
+
+                    (sum, product) =>
+
+                        sum +
+                        (product.quantity *
+                            product.rate),
+
+                    0
+                );
+
+            await Invoice.findByIdAndUpdate(
+
+                invoiceId,
+
+                {
+                    grandTotal
+                }
+            );
+
             res.json({
-                message: "Product Deleted"
+                message:
+                    "Product Deleted"
             });
 
-        } catch (error) {
+        }
+        catch (error) {
 
             res.status(500).json({
-                message: "Server Error"
+                message:
+                    "Server Error"
             });
         }
     }
@@ -272,9 +342,43 @@ app.put(
                     req.body,
 
                     {
-                        new: true
+                        new: true,
+                        runValidators: true
                     }
                 );
+            if (!updatedProduct) {
+
+                return res.status(404).json({
+                    message: "Product Not Found"
+                });
+            }
+            const products =
+                await Product.find({
+
+                    invoiceId:
+                        updatedProduct.invoiceId
+                });
+
+            const grandTotal =
+                products.reduce(
+
+                    (sum, product) =>
+
+                        sum +
+                        (product.quantity *
+                            product.rate),
+
+                    0
+                );
+
+            await Invoice.findByIdAndUpdate(
+
+                updatedProduct.invoiceId,
+
+                {
+                    grandTotal
+                }
+            );
 
             res.json(
                 updatedProduct
@@ -296,8 +400,38 @@ app.post(
 
         try {
 
-            const invoiceCount =
-                await Invoice.countDocuments();
+            const lastInvoice =
+                await Invoice.findOne()
+                    .sort({
+                        createdAt: -1
+                    });
+
+            let nextNumber = 1;
+
+            if (lastInvoice) {
+
+                const last =
+                    parseInt(
+
+                        lastInvoice
+                            .invoiceNumber
+                            .split("-")[2]
+
+                    );
+
+                nextNumber =
+                    last + 1;
+            }
+
+            const invoiceNumber =
+                `INV-${new Date().getFullYear()
+                }-${String(
+                    nextNumber
+                ).padStart(
+                    4,
+                    "0"
+                )
+                }`;
 
             const invoice =
                 new Invoice({
@@ -305,9 +439,8 @@ app.post(
                     customerId:
                         req.body.customerId,
 
-                    invoiceNumber:
-                        `INV-${Date.now()}`
-                }); f
+                    invoiceNumber
+                });
 
             await invoice.save();
 
@@ -316,11 +449,14 @@ app.post(
         }
         catch (error) {
 
+            console.log(error);
+
             res.status(500).json({
-                message: "Server Error"
+                message: error.message
             });
         }
-    });
+    }
+);
 app.get(
     "/invoices/:customerId",
 
@@ -370,7 +506,15 @@ app.get("/recent-invoices", async (req, res) => {
 
         const invoices =
             await Invoice.find()
-                .sort({ createdAt: -1 });
+
+                .populate(
+                    "customerId",
+                    "name"
+                )
+
+                .sort({
+                    createdAt: -1
+                });
 
         res.json(invoices);
 

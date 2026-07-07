@@ -136,7 +136,9 @@
                         <th>Invoice Number</th>
                         <th>Customer</th>
                         <th>Date</th>
-                        <th>Download</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Open</th>
                     </tr>
                 </thead>
 
@@ -1174,7 +1176,7 @@
 
                 // =========================
                 // Products Table
-                // =========================f
+                // =========================
 
                 doc.autoTable({
 
@@ -1339,9 +1341,9 @@
                 `Invoice Created : ${invoice.invoiceNumber}`
             );
 
-            await loadInvoices(
-                currentCustomerId
-            );
+            await loadInvoices(currentCustomerId);
+            await loadRecentInvoices();
+            await loadCustomers();
         }
         async function loadInvoices(customerId) {
 
@@ -1398,41 +1400,45 @@
             invoices.forEach(invoice => {
 
                 const customer =
-                    customers.find(
-                        c => String(c._id) === String(invoice.customerId)
-                    );
+                    invoice.customerId;
 
                 tbody.innerHTML += `
+    <tr>
 
-        <tr>
+    <td>${invoice.invoiceNumber}</td>
 
-            <td>${invoice.invoiceNumber}</td>
+    <td>
+        ${customer?.name || "Unknown"}
+    </td>
 
-            <td>
-                ${customer?.name || "Unknown"}
-            </td>
-
-            <td>
-                ${new Date(
+    <td>
+        ${new Date(
                     invoice.createdAt
                 ).toLocaleDateString()}
-            </td>
+    </td>
 
-            <td>
+    <td>
+        ₹${invoice.grandTotal || 0}
+    </td>
 
-                <button
-                onclick="
-                invoiceSelect.value='${invoice._id}';
-                currentInvoiceId='${invoice._id}';
-                loadInvoiceData('${invoice._id}');
-                ">
-                View
-                </button>
+    <td>
+        <span class="status-paid">
+            PAID
+        </span>
+    </td>
 
-            </td>
+    <td>
+        <button onclick="
+        invoiceSelect.value='${invoice._id}';
+        currentInvoiceId='${invoice._id}';
+        loadInvoiceData('${invoice._id}');
+        ">
+            Open
+        </button>
+    </td>
 
-        </tr>
-        `;
+    </tr>
+    `;
             });
         }
         loadCustomers().then(() => {
