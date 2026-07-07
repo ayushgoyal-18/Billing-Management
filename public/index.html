@@ -816,6 +816,7 @@
                 await loadInvoiceData(
                     currentInvoiceId
                 );
+                await loadRecentInvoices();
                 await loadCustomers();
             }
             catch (error) {
@@ -900,7 +901,7 @@
                 await loadInvoiceData(
                     currentInvoiceId
                 );
-
+                await loadRecentInvoices();
                 await loadCustomers();
             }
             catch (error) {
@@ -987,6 +988,7 @@
                 await loadInvoiceData(
                     currentInvoiceId
                 );
+                await loadRecentInvoices();
                 await loadCustomers();
             }
             catch (error) {
