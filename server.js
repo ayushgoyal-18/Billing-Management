@@ -39,7 +39,7 @@ const Customer =
 const Product =
     require("./models/product");
 const Invoice =
-    require("./models/Invoice");
+    require("./models/invoice");
 
 app.post("/customers", async (req, res) => {
 
