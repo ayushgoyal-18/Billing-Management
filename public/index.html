@@ -775,10 +775,9 @@
 
                     row.innerHTML = `
             <td>
-                ${customers.find(
-                        c => c._id ==
-                            currentCustomerId
-                    )?.name || ""}
+                ${customerSelect.options[
+                            customerSelect.selectedIndex
+                        ]?.text || ""}
             </td>
 
             <td>${product.product}</td>
@@ -1450,25 +1449,68 @@
     </td>
 
     <td>
-        <span class="status-paid">
-            PAID
-        </span>
+        <select onchange="updateStatus('${invoice._id}',this.value)">
+        <option ${invoice.paymentStatus === "Paid" ? "selected" : ""}>
+            Paid
+        </option>
+
+        <option ${invoice.paymentStatus === "Unpaid" ? "selected" : ""}>
+            Unpaid
+        </option>
+        </select>
     </td>
 
     <td>
         <button onclick="
-            customerSelect.value='${customer?._id || ""}';
-            currentCustomerId='${customer?._id || ""}';
-            invoiceSelect.value='${invoice._id}';
-            currentInvoiceId='${invoice._id}';
-            loadInvoiceData('${invoice._id}');
-            ">Open
-        </button>
+(async () => {
+
+    customerSelect.value='${customer?._id || ""}';
+
+    currentCustomerId='${customer?._id || ""}';
+
+    await loadInvoices('${customer?._id || ""}');
+
+    invoiceSelect.value='${invoice._id}';
+
+    currentInvoiceId='${invoice._id}';
+
+    loadInvoiceData('${invoice._id}');
+
+})();
+">
+    Open
+</button>
     </td>
 
     </tr>
     `;
             });
+        }
+        async function updateStatus(
+            invoiceId,
+            status
+        ) {
+
+            await fetch(
+                `https://billing-management-backend-ypsf.onrender.com/invoice-status/${invoiceId}`,
+
+                {
+                    method: "PUT",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        paymentStatus:
+                            status
+                    })
+                }
+            );
+
+            loadRecentInvoices();
         }
         loadCustomers().then(() => {
             loadRecentInvoices();

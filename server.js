@@ -509,7 +509,7 @@ app.get("/recent-invoices", async (req, res) => {
 
                 .populate(
                     "customerId",
-                    "name"
+                    "name mobile email"
                 )
 
                 .sort({
@@ -526,3 +526,34 @@ app.get("/recent-invoices", async (req, res) => {
         });
     }
 });
+app.put(
+    "/invoice-status/:id",
+    async (req, res) => {
+
+        try {
+
+            const invoice =
+                await Invoice.findByIdAndUpdate(
+
+                    req.params.id,
+
+                    {
+                        paymentStatus:
+                            req.body.paymentStatus
+                    },
+
+                    {
+                        new: true
+                    }
+                );
+
+            res.json(invoice);
+
+        } catch (error) {
+
+            res.status(500).json({
+                message: "Server Error"
+            });
+        }
+    }
+);

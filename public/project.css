@@ -470,4 +470,37 @@ label {
     letter-spacing: 0.5px;
 
     text-transform: uppercase;
+    
+    border: 1px solid #bbf7d0;
+
+    min-width: 80px;
+
+    text-align: center;
+}
+
+.status-unpaid {
+
+    display: inline-block;
+
+    background: #fee2e2;
+
+    color: #b91c1c;
+
+    padding: 8px 14px;
+
+    border-radius: 999px;
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.5px;
+
+    text-transform: uppercase;
+
+    border: 1px solid #fecaca;
+
+    min-width: 80px;
+
+    text-align: center;
 }

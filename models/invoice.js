@@ -22,8 +22,12 @@ const invoiceSchema =
         grandTotal: {
             type: Number,
             default: 0
+        },
+        paymentStatus: {
+            type: String,
+            enum: ["Paid", "Unpaid"],
+            default: "Unpaid"
         }
-
     },
         {
             timestamps: true
