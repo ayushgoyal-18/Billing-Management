@@ -159,7 +159,6 @@
 
         const tableBody =
             document.getElementById("tableBody");
-
         const totalPrice =
             document.getElementById("totalPrice");
         const invoiceSelect =
@@ -167,7 +166,7 @@
                 "invoiceSelect"
             );
         let currentCustomerId = "";
-
+        invoiceSelect.value = "";
 
         customerSelect.addEventListener(
             "change",
@@ -176,6 +175,27 @@
 
                 currentCustomerId =
                     this.value;
+
+                if (!this.value) {
+
+                    currentCustomerId = null;
+                    currentInvoiceId = null;
+
+                    invoiceSelect.innerHTML =
+                        `<option value="">
+                            -- Select Invoice --
+                        </option>`;
+
+                    document
+                        .getElementById("tableBody")
+                        .innerHTML = "";
+
+                    document
+                        .getElementById("totalPrice")
+                        .innerText = "0";
+
+                    return;
+                }
 
                 tableBody.innerHTML = "";
 
@@ -198,7 +218,16 @@
 
                 currentInvoiceId =
                     this.value;
+                if (!currentCustomerId) {
 
+                    alert(
+                        "Please select a customer first."
+                    );
+
+                    invoiceSelect.value = "";
+
+                    return;
+                }
                 if (currentInvoiceId) {
 
                     loadInvoiceData(
@@ -221,7 +250,14 @@
 
                 return;
             }
+            if (!currentInvoiceId) {
 
+                alert(
+                    "Please select an invoice first."
+                );
+
+                return;
+            }
             const row = document.createElement("tr");
 
             row.innerHTML = `
@@ -1369,18 +1405,8 @@
         `;
             });
 
-            if (invoices.length) {
-
-                invoiceSelect.value =
-                    invoices[invoices.length - 1]._id;
-
-                currentInvoiceId =
-                    invoiceSelect.value;
-
-                loadInvoiceData(
-                    currentInvoiceId
-                );
-            }
+            invoiceSelect.value = "";
+            currentInvoiceId = "";
         }
         async function loadRecentInvoices() {
 
@@ -1431,11 +1457,12 @@
 
     <td>
         <button onclick="
-        invoiceSelect.value='${invoice._id}';
-        currentInvoiceId='${invoice._id}';
-        loadInvoiceData('${invoice._id}');
-        ">
-            Open
+            customerSelect.value='${customer?._id || ""}';
+            currentCustomerId='${customer?._id || ""}';
+            invoiceSelect.value='${invoice._id}';
+            currentInvoiceId='${invoice._id}';
+            loadInvoiceData('${invoice._id}');
+            ">Open
         </button>
     </td>
 
